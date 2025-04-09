@@ -4,6 +4,7 @@ from uuid import uuid4
 from pathlib import Path
 import json
 import time
+from contextlib import ContextDecorator
 
 def add_json_decorator(param: str) -> Callable[...,Callable[...,Any]]:
     def real_decorator(func: Callable[...,Any]) -> Callable[...,Any]:
@@ -30,7 +31,7 @@ def add_json_decorator(param: str) -> Callable[...,Callable[...,Any]]:
         return the_wrapper_around
     return real_decorator
 
-class AddJsonContextManager:
+class AddJsonContextManager(ContextDecorator):
     def __init__(self, name: str) -> None:
         self.name = name
         self.function_start_time: int | None = None
@@ -66,3 +67,11 @@ def new_decorated_func(str1: str, int1: int, list1: list, par1=0, par2=(1, 2, 3)
 
 with AddJsonContextManager('NewName03'):
     new_decorated_func('test',56,[5,6,7])
+
+@AddJsonContextManager('NewName04')
+def new1_decorated_func(str1: str, int1: int, list1: list, par1=0, par2=(1, 2, 3)):
+    time.sleep(4)
+    # raise Exception("My Error!")
+    return (print(str1 + str(int1) + str(list1) + str(par1) + str(par2)+'!!'))
+
+new1_decorated_func('test1',56,[5,6,7])
