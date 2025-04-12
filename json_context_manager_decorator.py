@@ -5,6 +5,7 @@ from uuid import uuid4
 from pathlib import Path
 import json
 import time
+import types
 
 
 # Modify code and store function name, arguments names and values in same json for decorator
@@ -32,32 +33,49 @@ class AddJsonContextManagerDecorator:
             json.dump(data, outfile)
 
     @staticmethod
+    def return_transform_arg_type(arg):
+        if isinstance(arg, int | float | str | bool):
+            return arg
+        if isinstance(arg, tuple | list | set | dict):
+            return str(type(arg))
+        elif isinstance(arg, (types.FunctionType,type)):
+            return arg.__name__
+        else:
+            return str(arg.__class__)
+
+
+    @staticmethod
     def parser_args_kwargs_for_json(args: tuple,kwargs: dict,function: Callable[...,Any]) -> dict:
         data = {}
         full_arg_spec = inspect.getfullargspec(function)
         len_full_arg_spec_args = len(full_arg_spec.args)
         len_args = len(args)
+        print(args)
+        print(full_arg_spec)
+
         if len_args != 0:
             if len_args == len_full_arg_spec_args:
                 for i in range(len_full_arg_spec_args):
-                    data[full_arg_spec.args[i]] = args[i]
+                    data[full_arg_spec.args[i]] = AddJsonContextManagerDecorator.return_transform_arg_type(args[i])
             elif len_full_arg_spec_args == 0:
-                data[full_arg_spec.varargs] = args
+                for x in args:
+                    data[full_arg_spec.varargs] = AddJsonContextManagerDecorator.return_transform_arg_type(x)
             elif len_args > len_full_arg_spec_args:
                 for i in range(len_full_arg_spec_args):
-                    data[full_arg_spec.args[i]] = args[i]
+                    data[full_arg_spec.args[i]] = AddJsonContextManagerDecorator.return_transform_arg_type(args[i])
                 else:
-                    data[full_arg_spec.varargs] = args[i + 1::]
+                    for k in args[i + 1::]:
+                        data[full_arg_spec.varargs] = AddJsonContextManagerDecorator.return_transform_arg_type(k)
             else:
                 for i in range(len_args):
-                    data[full_arg_spec.args[i]] = args[i]
+                    data[full_arg_spec.args[i]] = AddJsonContextManagerDecorator.return_transform_arg_type(args[i])
                 else:
                     for a in range(len(full_arg_spec.defaults)):
                         i += 1
-                        data[full_arg_spec.args[i]] = full_arg_spec.defaults[a]
+                        data[full_arg_spec.args[i]] = AddJsonContextManagerDecorator.return_transform_arg_type(full_arg_spec.defaults[a])
         if len(kwargs) != 0:
             for key, value in kwargs.items():
-                data[key] = value
+                data[key] = AddJsonContextManagerDecorator.return_transform_arg_type(value)
         return data
 
     def __call__(self, function: Callable[...,Any]) -> Callable[...,Any]:
@@ -90,7 +108,7 @@ def new3_decorated_func(str01: str, int01: int, list01: list, par01: int = 0, pa
     # raise Exception("My Error0")
     return (print(str01 + str(int01) + str(list01) + str(par01) + str(par02)+'_!'+str(r)))
 
-new3_decorated_func('test', 56, [5, 6, 90], par01 = -6, s={'1':1,'2':2},ty=9,yui=789)
+new3_decorated_func('test', 56, [5, 6, 90], par01 = -6, s={'1':1,'2':2},ty=9,yui=range(1))
 
 def new4_decorated_func(str1: str, int1: int, list1: list, par1: int = 0, par2: tuple = (1, 2, 3)) -> None:
     time.sleep(3)
@@ -99,3 +117,10 @@ def new4_decorated_func(str1: str, int1: int, list1: list, par1: int = 0, par2: 
 
 with AddJsonContextManagerDecorator('TEST'):
     new4_decorated_func('test', 56, [5, 6, 91])
+
+
+# Attach a logic, that store only types if function's argument is a collection,
+# class' name if argument is an object,
+# function's name if argument is a function
+
+
