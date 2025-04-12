@@ -8,8 +8,6 @@ import time
 import types
 
 
-# Modify code and store function name, arguments names and values in same json for decorator
-
 class AddJsonContextManagerDecorator:
     def __init__(self, name: str) -> None:
         self.name = name
@@ -117,10 +115,4 @@ def new4_decorated_func(str1: str, int1: int, list1: list, par1: int = 0, par2: 
 
 with AddJsonContextManagerDecorator('TEST'):
     new4_decorated_func('test', 56, [5, 6, 91])
-
-
-# Attach a logic, that store only types if function's argument is a collection,
-# class' name if argument is an object,
-# function's name if argument is a function
-
 
