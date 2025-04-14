@@ -6,6 +6,41 @@ from pathlib import Path
 import json
 import time
 import types
+import dataclasses
+
+
+@dataclasses.dataclass(frozen=True)
+class DataLogging:
+    name: str
+    function_start_time: int
+    function_end_time: int
+    error: str | None
+
+    def to_dict(self, error: Exception | None) -> dict:
+        data = {
+            'name': self.name,
+            'functionStartTime': self.function_start_time,
+            'functionEndTime': self.function_end_time,
+        }
+        if error is not None:
+            data['error'] = str(error)
+        return data
+
+    @staticmethod
+    def create_file(data, param_call) -> None:
+        with Path(f'./Logs/{param_call}/{uuid4()}.json').open('w') as outfile:
+            json.dump(data, outfile)
+
+@dataclasses.dataclass(frozen=True)
+class DataLoggingDecorator(DataLogging):
+    function_name: str
+    function_arguments: dict
+
+    def to_dict(self, error: Exception | None) -> dict:
+        data = super().to_dict(error)
+        data['functionName'] = self.function_name
+        data['functionArguments'] = self.function_arguments
+        return data
 
 
 class AddJsonContextManagerDecorator:
@@ -16,19 +51,13 @@ class AddJsonContextManagerDecorator:
         self.function_end_time: int | None = None
         self.function_name: str | None = None
 
-    def create_json_file(self, error: Exception | None, param_call: str, data_args_kwargs: dict |None = None) -> None:
-        data = {
-            'name': self.name,
-            'functionStartTime': self.function_start_time,
-            'functionEndTime': self.function_end_time,
-        }
-        if self.function_name is not None:
-            data['functionName'] = self.function_name
-            data['functionArguments'] = data_args_kwargs
-        if error is not None:
-            data['error'] = str(error)
-        with Path(f'./Logs/{param_call}/{uuid4()}.json').open('w') as outfile:
-            json.dump(data, outfile)
+    def create_data_object(self, error: Exception | None, data_args_kwargs: dict |None = None) -> DataLogging | DataLoggingDecorator:
+        if self.function_name is None:
+            data_obj = DataLogging(self.name, self.function_start_time, self.function_end_time, str(error))
+        else:
+            data_obj = DataLoggingDecorator(self.name, self.function_start_time, self.function_end_time, str(error),
+                                   self.function_name, data_args_kwargs)
+        return data_obj
 
     @staticmethod
     def return_transform_arg_type(arg):
@@ -48,8 +77,6 @@ class AddJsonContextManagerDecorator:
         full_arg_spec = inspect.getfullargspec(function)
         len_full_arg_spec_args = len(full_arg_spec.args)
         len_args = len(args)
-        print(args)
-        print(full_arg_spec)
 
         if len_args != 0:
             if len_args == len_full_arg_spec_args:
@@ -88,7 +115,8 @@ class AddJsonContextManagerDecorator:
                 raise
             finally:
                 self.function_end_time = int(time.time())
-                self.create_json_file(self.error, 'decorator', data_args_kwargs)
+                a = self.create_data_object(self.error, data_args_kwargs)
+                a.create_file(a.to_dict(self.error),'decorator')
             return result
         return the_wrapper_around
 
@@ -97,8 +125,8 @@ class AddJsonContextManagerDecorator:
 
     def __exit__(self,exc_type: type[Exception],exc_value: Exception,traceback: Any) -> None:
         self.function_end_time = int(time.time())
-        self.create_json_file(exc_value, 'context_manager')
-
+        b = self.create_data_object(exc_value)
+        b.create_file(b.to_dict(exc_value),'context_manager')
 
 @AddJsonContextManagerDecorator('TEST0')
 def new3_decorated_func(str01: str, int01: int, list01: list, par01: int = 0, par02: tuple = (1, 2, 3), **r) -> None:
