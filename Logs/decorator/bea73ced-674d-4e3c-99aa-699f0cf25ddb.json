@@ -1,1 +1,0 @@
-{"name": "TEST0", "functionStartTime": 1744628083, "functionEndTime": 1744628086, "functionName": "new3_decorated_func", "functionArguments": {"str01": "test", "int01": 56, "list01": "<class 'list'>", "par01": -6, "par02": "<class 'tuple'>", "s": "<class 'dict'>", "ty": 9, "yui": "<class 'range'>"}}
