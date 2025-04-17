@@ -9,8 +9,6 @@ import time
 import types
 import dataclasses
 
-LIST_OF_OBJECTS = list()
-
 
 # Include logic, that each internal function should attach own data to the nearest external function,
 # function may have several  internal functions with data, implement and use Stack collection inside
@@ -54,12 +52,16 @@ class DataLoggingDecorator(DataLogging):
 
 
 class AddJsonContextManagerDecorator:
+
+    list_of_objects = list()
+
     def __init__(self, name: str) -> None:
         self.name = name
         self.error: Exception | None = None
         self.function_start_time: int | None = None
         self.function_end_time: int | None = None
         self.function_name: str | None = None
+        self.atr_object: DataLogging | None = None
 
     def create_data_object(self, error: Exception | None = None, data_args_kwargs: dict |None = None) -> DataLogging | DataLoggingDecorator:
         if self.function_name is None:
@@ -120,28 +122,33 @@ class AddJsonContextManagerDecorator:
             self.function_start_time = int(time.time())
             a = self.create_data_object(data_args_kwargs = data_args_kwargs)
             try:
-                if len(LIST_OF_OBJECTS) != 0:
-                    LIST_OF_OBJECTS[len(LIST_OF_OBJECTS)-1].inner_function.append(a)
-                LIST_OF_OBJECTS.append(a)
+                if len(self.list_of_objects) != 0:
+                    self.list_of_objects[len(self.list_of_objects)-1].inner_function.append(a)
+                self.list_of_objects.append(a)
                 result = function(*args, **kwargs)
             except Exception as error:
                 a.error = str(error)
                 raise
             finally:
                 self.function_end_time = a.function_end_time = int(time.time())
-                if len(LIST_OF_OBJECTS) == 1:
+                if len(self.list_of_objects) == 1:
                     a.create_file(a.to_dict(),'decorator')
-                LIST_OF_OBJECTS.pop()
+                self.list_of_objects.pop()
             return result
         return the_wrapper_around
 
     def __enter__(self) -> None:
         self.function_start_time = int(time.time())
+        self.atr_object = self.create_data_object()
+        if len(self.list_of_objects) != 0:
+            self.list_of_objects[len(self.list_of_objects) - 1].inner_function.append(self.atr_object)
+        self.list_of_objects.append(self.atr_object)
 
     def __exit__(self,exc_type: type[Exception],exc_value: Exception,traceback: Any) -> None:
-        self.function_end_time = int(time.time())
-        b = self.create_data_object(error = exc_value)
-        b.create_file(b.to_dict(),'context_manager')
+        self.function_end_time = self.atr_object.function_end_time = int(time.time())
+        if len(self.list_of_objects) == 1:
+            self.atr_object.create_file(self.atr_object.to_dict(), 'context_manager')
+        self.list_of_objects.pop()
 
 @AddJsonContextManagerDecorator('TEST0')
 def new3_decorated_func(str01: str, int01: int, list01: list, par01: int = 0, par02: tuple = (1, 2, 3), **r) -> None:
@@ -152,8 +159,16 @@ def new3_decorated_func(str01: str, int01: int, list01: list, par01: int = 0, pa
     return (print(str01 + str(int01) + str(list01) + str(par01) + str(par02)+'_!'+str(r)))
 
 @AddJsonContextManagerDecorator('7Task')
+def function01() -> str:
+    time.sleep(3)
+    # raise Exception("My Error1")
+    return 'I am returned str END'
+
+@AddJsonContextManagerDecorator('7Task')
 def function1() -> str:
     time.sleep(3)
+    with AddJsonContextManagerDecorator('TEST_END'):
+        function01()
     # raise Exception("My Error1")
     return 'I am returned str'
 
@@ -175,4 +190,6 @@ def new4_decorated_func(str1: str, int1: int, list1: list, par1: int = 0, par2: 
 with AddJsonContextManagerDecorator('TEST'):
     new4_decorated_func('test', 56, [5, 6, 91])
     function2()
+    with AddJsonContextManagerDecorator('TEST_end'):
+        function1()
 
