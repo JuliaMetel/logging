@@ -15,7 +15,7 @@ class DataLogging:
     name: str
     start_time: int
     end_time: int
-    error: str | None
+    error: Exception | None
     inner: list = field(default_factory=list, kw_only=True)
 
     def to_dict(self) -> dict:
@@ -60,9 +60,9 @@ class AddJsonContextManagerDecorator:
 
     def create_data_object(self, error: Exception | None = None, data_args_kwargs: dict |None = None) -> DataLogging | DataLoggingDecorator:
         if self.function_name is None:
-            data_obj = DataLogging(self.name, self.start_time, self.end_time, str(error))
+            data_obj = DataLogging(self.name, self.start_time, self.end_time, error)
         else:
-            data_obj = DataLoggingDecorator(self.name, self.start_time, self.end_time, str(error),
+            data_obj = DataLoggingDecorator(self.name, self.start_time, self.end_time, error,
                                    self.function_name, data_args_kwargs)
         return data_obj
 
@@ -122,7 +122,7 @@ class AddJsonContextManagerDecorator:
                 self.list_of_objects.append(a)
                 result = function(*args, **kwargs)
             except Exception as error:
-                a.error = str(error)
+                a.error = error
                 raise
             finally:
                 self.end_time = a.end_time = int(time.time())
@@ -133,13 +133,15 @@ class AddJsonContextManagerDecorator:
         return the_wrapper_around
 
     def __enter__(self) -> None:
-        self.start_time = int(time.time())
         self.atr_object = self.create_data_object()
+        self.start_time = self.atr_object.start_time = int(time.time())
         if len(self.list_of_objects) != 0:
             self.list_of_objects[len(self.list_of_objects) - 1].inner.append(self.atr_object)
         self.list_of_objects.append(self.atr_object)
 
     def __exit__(self,exc_type: type[Exception],exc_value: Exception,traceback: Any) -> None:
+        if exc_value is not None:
+            self.atr_object.error = exc_value
         self.end_time = self.atr_object.end_time = int(time.time())
         if len(self.list_of_objects) == 1:
             self.atr_object.create_file(self.atr_object.to_dict(), 'context_manager')
@@ -171,20 +173,21 @@ def function1(time_sleep) -> str:
 def function2() -> str:
     time.sleep(3)
     function1(2)
-    # raise Exception("My Error1")
+    raise Exception("My Error1")
     return 'I am returned str1'
 
 new3_decorated_func('test', 56, [5, 6, 90], par01 = -6, s={'1':1,'2':2},ty=9,yui=range(1))
 function1(5)
 
+@AddJsonContextManagerDecorator('Dick')
 def new4_decorated_func(str1: str, int1: int, list1: list, par1: int = 0, par2: tuple = (1, 2, 3)) -> None:
     time.sleep(3)
     # raise Exception("My Error")
     return (print(str1 + str(int1) + str(list1) + str(par1) + str(par2)+'__!'))
 
 with AddJsonContextManagerDecorator('TEST'):
-    new4_decorated_func('test', 56, [5, 6, 91])
     function2()
+    new4_decorated_func('test', 56, [5, 6, 91])
     with AddJsonContextManagerDecorator('TEST_end'):
         function1(4)
 
