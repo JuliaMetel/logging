@@ -31,7 +31,9 @@ class DataLogging:
 
     @staticmethod
     def create_file(data, param_call) -> None:
-        with Path(f'./Logs/{param_call}/{uuid4()}.json').open('w') as outfile:
+        folder_path = Path(f'Logs/{param_call}')
+        folder_path.mkdir(parents=True, exist_ok=True)
+        with folder_path.joinpath(f'{uuid4()}.json').open('w') as outfile:
             json.dump(data, outfile)
 
 @dataclasses.dataclass()
@@ -173,7 +175,7 @@ def function1(time_sleep) -> str:
 def function2() -> str:
     time.sleep(3)
     function1(2)
-    raise Exception("My Error1")
+    # raise Exception("My Error1")
     return 'I am returned str1'
 
 new3_decorated_func('test', 56, [5, 6, 90], par01 = -6, s={'1':1,'2':2},ty=9,yui=range(1))
