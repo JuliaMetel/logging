@@ -20,4 +20,17 @@ class TestCreateDataObject:
         a = AddJsonContextManagerDecorator("TestName")
         a.function_name = function_name
         assert str(type(a.create_data_object(**error, **data_args_kwargs))) == "<class 'json_context_manager_decorator.DataLoggingDecorator'>"
+# Add ruff linter and use format
+class TestReturnTransformArgType:
+
+    @pytest.mark.parametrize(('arg','expected'),
+                             [(3,3), (45.56,45.56), ('test_str','test_str'),
+                              (True,True),((1,2,3),"<class 'tuple'>"),
+                              ([1,2,3],"<class 'list'>"), ({1,2,3},"<class 'set'>"),
+                              ({'key':1},"<class 'dict'>"), (lambda a : a, '<lambda>'),
+                              (range(1), "<class 'range'>")])
+    def test_return_transform_arg_type(self,arg,expected):
+        assert AddJsonContextManagerDecorator("TestName").return_transform_arg_type(arg) == expected
+
+
 
