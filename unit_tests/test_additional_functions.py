@@ -11,8 +11,8 @@ class TestCreateDataObject:
         a = AddJsonContextManagerDecorator("TestName").create_data_object(**error)
         assert str(type(a)) == "<class 'json_context_manager_decorator.DataLogging'>"
         assert a.name == "TestName"
-        assert a.start_time == None
-        assert a.end_time == None
+        assert a.start_time is None
+        assert a.end_time is None
         assert a.error == error.get("error")
         assert a.inner == []
 
@@ -44,8 +44,8 @@ class TestCreateDataObject:
             == "<class 'json_context_manager_decorator.DataLoggingDecorator'>"
         )
         assert b.name == "TestName1"
-        assert b.start_time == None
-        assert b.end_time == None
+        assert b.start_time is None
+        assert b.end_time is None
         assert b.error == error.get("error")
         assert b.inner == []
         assert b.function_name == a.function_name
