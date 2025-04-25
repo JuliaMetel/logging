@@ -20,21 +20,22 @@ class DataLogging:
 
     def to_dict(self) -> dict:
         data = {
-            'name': self.name,
-            'startTime': self.start_time,
-            'endTime': self.end_time,
+            "name": self.name,
+            "startTime": self.start_time,
+            "endTime": self.end_time,
         }
         if self.error is not None:
-            data['error'] = str(self.error)
-        data['inner'] = [i.to_dict() for i in self.inner]
+            data["error"] = str(self.error)
+        data["inner"] = [i.to_dict() for i in self.inner]
         return data
 
     @staticmethod
     def create_file(data, param_call) -> None:
-        folder_path = Path(f'Logs/{param_call}')
+        folder_path = Path(f"Logs/{param_call}")
         folder_path.mkdir(parents=True, exist_ok=True)
-        with folder_path.joinpath(f'{uuid4()}.json').open('w') as outfile:
+        with folder_path.joinpath(f"{uuid4()}.json").open("w") as outfile:
             json.dump(data, outfile)
+
 
 @dataclasses.dataclass()
 class DataLoggingDecorator(DataLogging):
@@ -43,13 +44,12 @@ class DataLoggingDecorator(DataLogging):
 
     def to_dict(self) -> dict:
         data = super().to_dict()
-        data['functionName'] = self.function_name
-        data['functionArguments'] = self.function_arguments
+        data["functionName"] = self.function_name
+        data["functionArguments"] = self.function_arguments
         return data
 
 
 class AddJsonContextManagerDecorator:
-
     list_of_objects = list()
 
     def __init__(self, name: str) -> None:
@@ -60,12 +60,20 @@ class AddJsonContextManagerDecorator:
         self.function_name: str | None = None
         self.atr_object: DataLogging | None = None
 
-    def create_data_object(self, error: Exception | None = None, data_args_kwargs: dict |None = None) -> DataLogging | DataLoggingDecorator:
+    def create_data_object(
+        self, error: Exception | None = None, data_args_kwargs: dict | None = None
+    ) -> DataLogging | DataLoggingDecorator:
         if self.function_name is None:
             data_obj = DataLogging(self.name, self.start_time, self.end_time, error)
         else:
-            data_obj = DataLoggingDecorator(self.name, self.start_time, self.end_time, error,
-                                   self.function_name, data_args_kwargs)
+            data_obj = DataLoggingDecorator(
+                self.name,
+                self.start_time,
+                self.end_time,
+                error,
+                self.function_name,
+                data_args_kwargs,
+            )
         return data_obj
 
     @staticmethod
@@ -74,14 +82,15 @@ class AddJsonContextManagerDecorator:
             return arg
         if isinstance(arg, tuple | list | set | dict):
             return str(type(arg))
-        elif isinstance(arg, (types.FunctionType,type)):
+        elif isinstance(arg, (types.FunctionType, type)):
             return arg.__name__
         else:
             return str(arg.__class__)
 
-
     @staticmethod
-    def parser_args_kwargs_for_json(args: tuple,kwargs: dict,function: Callable[...,Any]) -> dict:
+    def parser_args_kwargs_for_json(
+        args: tuple, kwargs: dict, function: Callable[..., Any]
+    ) -> dict:
         data = {}
         full_arg_spec = inspect.getfullargspec(function)
         len_full_arg_spec_args = len(full_arg_spec.args)
@@ -90,37 +99,60 @@ class AddJsonContextManagerDecorator:
         if len_args != 0:
             if len_args == len_full_arg_spec_args:
                 for i in range(len_full_arg_spec_args):
-                    data[full_arg_spec.args[i]] = AddJsonContextManagerDecorator.return_transform_arg_type(args[i])
+                    data[full_arg_spec.args[i]] = (
+                        AddJsonContextManagerDecorator.return_transform_arg_type(
+                            args[i]
+                        )
+                    )
             elif len_full_arg_spec_args == 0:
                 for x in args:
-                    data[full_arg_spec.varargs] = AddJsonContextManagerDecorator.return_transform_arg_type(x)
+                    data[full_arg_spec.varargs] = (
+                        AddJsonContextManagerDecorator.return_transform_arg_type(x)
+                    )
             elif len_args > len_full_arg_spec_args:
                 for i in range(len_full_arg_spec_args):
-                    data[full_arg_spec.args[i]] = AddJsonContextManagerDecorator.return_transform_arg_type(args[i])
+                    data[full_arg_spec.args[i]] = (
+                        AddJsonContextManagerDecorator.return_transform_arg_type(
+                            args[i]
+                        )
+                    )
                 else:
-                    for k in args[i + 1::]:
-                        data[full_arg_spec.varargs] = AddJsonContextManagerDecorator.return_transform_arg_type(k)
+                    for k in args[i + 1 : :]:
+                        data[full_arg_spec.varargs] = (
+                            AddJsonContextManagerDecorator.return_transform_arg_type(k)
+                        )
             else:
                 for i in range(len_args):
-                    data[full_arg_spec.args[i]] = AddJsonContextManagerDecorator.return_transform_arg_type(args[i])
+                    data[full_arg_spec.args[i]] = (
+                        AddJsonContextManagerDecorator.return_transform_arg_type(
+                            args[i]
+                        )
+                    )
                 else:
                     for a in range(len(full_arg_spec.defaults)):
                         i += 1
-                        data[full_arg_spec.args[i]] = AddJsonContextManagerDecorator.return_transform_arg_type(full_arg_spec.defaults[a])
+                        data[full_arg_spec.args[i]] = (
+                            AddJsonContextManagerDecorator.return_transform_arg_type(
+                                full_arg_spec.defaults[a]
+                            )
+                        )
         if len(kwargs) != 0:
             for key, value in kwargs.items():
-                data[key] = AddJsonContextManagerDecorator.return_transform_arg_type(value)
+                data[key] = AddJsonContextManagerDecorator.return_transform_arg_type(
+                    value
+                )
         return data
 
-    def __call__(self, function: Callable[...,Any]) -> Callable[...,Any]:
+    def __call__(self, function: Callable[..., Any]) -> Callable[..., Any]:
         self.function_name = function.__name__
+
         def the_wrapper_around(*args: Any, **kwargs: Any) -> Any:
-            data_args_kwargs = self.parser_args_kwargs_for_json(args,kwargs,function)
+            data_args_kwargs = self.parser_args_kwargs_for_json(args, kwargs, function)
             self.start_time = int(time.time())
-            a = self.create_data_object(data_args_kwargs = data_args_kwargs)
+            a = self.create_data_object(data_args_kwargs=data_args_kwargs)
             try:
                 if len(self.list_of_objects) != 0:
-                    self.list_of_objects[len(self.list_of_objects)-1].inner.append(a)
+                    self.list_of_objects[len(self.list_of_objects) - 1].inner.append(a)
                 self.list_of_objects.append(a)
                 result = function(*args, **kwargs)
             except Exception as error:
@@ -129,67 +161,86 @@ class AddJsonContextManagerDecorator:
             finally:
                 self.end_time = a.end_time = int(time.time())
                 if len(self.list_of_objects) == 1:
-                    a.create_file(a.to_dict(),'decorator')
+                    a.create_file(a.to_dict(), "decorator")
                 self.list_of_objects.pop()
             return result
+
         return the_wrapper_around
 
     def __enter__(self) -> None:
         self.atr_object = self.create_data_object()
         self.start_time = self.atr_object.start_time = int(time.time())
         if len(self.list_of_objects) != 0:
-            self.list_of_objects[len(self.list_of_objects) - 1].inner.append(self.atr_object)
+            self.list_of_objects[len(self.list_of_objects) - 1].inner.append(
+                self.atr_object
+            )
         self.list_of_objects.append(self.atr_object)
 
-    def __exit__(self,exc_type: type[Exception],exc_value: Exception,traceback: Any) -> None:
+    def __exit__(
+        self, exc_type: type[Exception], exc_value: Exception, traceback: Any
+    ) -> None:
         if exc_value is not None:
             self.atr_object.error = exc_value
         self.end_time = self.atr_object.end_time = int(time.time())
         if len(self.list_of_objects) == 1:
-            self.atr_object.create_file(self.atr_object.to_dict(), 'context_manager')
+            self.atr_object.create_file(self.atr_object.to_dict(), "context_manager")
         self.list_of_objects.pop()
 
-@AddJsonContextManagerDecorator('TEST0')
-def new3_decorated_func(str01: str, int01: int, list01: list, par01: int = 0, par02: tuple = (1, 2, 3), **r) -> None:
+
+@AddJsonContextManagerDecorator("TEST0")
+def new3_decorated_func(
+    str01: str, int01: int, list01: list, par01: int = 0, par02: tuple = (1, 2, 3), **r
+) -> None:
     time.sleep(3)
     print(function2())
     print(function1(7))
     # raise Exception("My Error0")
-    return (print(str01 + str(int01) + str(list01) + str(par01) + str(par02)+'_!'+str(r)))
+    return print(
+        str01 + str(int01) + str(list01) + str(par01) + str(par02) + "_!" + str(r)
+    )
 
-@AddJsonContextManagerDecorator('7Task')
+
+@AddJsonContextManagerDecorator("7Task")
 def function01() -> str:
     time.sleep(3)
     # raise Exception("My Error1")
-    return 'I am returned str END'
+    return "I am returned str END"
 
-@AddJsonContextManagerDecorator('7Task')
+
+@AddJsonContextManagerDecorator("7Task")
 def function1(time_sleep) -> str:
     time.sleep(time_sleep)
-    with AddJsonContextManagerDecorator('TEST_END'):
+    with AddJsonContextManagerDecorator("TEST_END"):
         function01()
     # raise Exception("My Error1")
-    return 'I am returned str'
+    return "I am returned str"
 
-@AddJsonContextManagerDecorator('7Task')
+
+@AddJsonContextManagerDecorator("7Task")
 def function2() -> str:
     time.sleep(3)
     function1(2)
     # raise Exception("My Error1")
-    return 'I am returned str1'
+    return "I am returned str1"
 
-new3_decorated_func('test', 56, [5, 6, 90], par01 = -6, s={'1':1,'2':2},ty=9,yui=range(1))
+
+new3_decorated_func(
+    "test", 56, [5, 6, 90], par01=-6, s={"1": 1, "2": 2}, ty=9, yui=range(1)
+)
 function1(5)
 
-@AddJsonContextManagerDecorator('Dick')
-def new4_decorated_func(str1: str, int1: int, list1: list, par1: int = 0, par2: tuple = (1, 2, 3)) -> None:
+
+@AddJsonContextManagerDecorator("Dick")
+def new4_decorated_func(
+    str1: str, int1: int, list1: list, par1: int = 0, par2: tuple = (1, 2, 3)
+) -> None:
     time.sleep(3)
     # raise Exception("My Error")
-    return (print(str1 + str(int1) + str(list1) + str(par1) + str(par2)+'__!'))
+    return print(str1 + str(int1) + str(list1) + str(par1) + str(par2) + "__!")
 
-with AddJsonContextManagerDecorator('TEST'):
+
+with AddJsonContextManagerDecorator("TEST"):
     function2()
-    new4_decorated_func('test', 56, [5, 6, 91])
-    with AddJsonContextManagerDecorator('TEST_end'):
+    new4_decorated_func("test", 56, [5, 6, 91])
+    with AddJsonContextManagerDecorator("TEST_end"):
         function1(4)
-
