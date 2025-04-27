@@ -93,6 +93,9 @@ class AddJsonContextManagerDecorator:
     ) -> dict:
         data = {}
         full_arg_spec = inspect.getfullargspec(function)
+        print(full_arg_spec)
+        print(args)
+        print(kwargs)
         len_full_arg_spec_args = len(full_arg_spec.args)
         len_args = len(args)
 
@@ -105,10 +108,10 @@ class AddJsonContextManagerDecorator:
                         )
                     )
             elif len_full_arg_spec_args == 0:
-                for x in args:
-                    data[full_arg_spec.varargs] = (
-                        AddJsonContextManagerDecorator.return_transform_arg_type(x)
-                    )
+                data[full_arg_spec.varargs] = tuple(
+                    AddJsonContextManagerDecorator.return_transform_arg_type(x)
+                    for x in args
+                )
             elif len_args > len_full_arg_spec_args:
                 for i in range(len_full_arg_spec_args):
                     data[full_arg_spec.args[i]] = (
@@ -117,10 +120,10 @@ class AddJsonContextManagerDecorator:
                         )
                     )
                 else:
-                    for k in args[i + 1 : :]:
-                        data[full_arg_spec.varargs] = (
-                            AddJsonContextManagerDecorator.return_transform_arg_type(k)
-                        )
+                    data[full_arg_spec.varargs] = tuple(
+                        AddJsonContextManagerDecorator.return_transform_arg_type(k)
+                        for k in args[i + 1 : :]
+                    )
             else:
                 for i in range(len_args):
                     data[full_arg_spec.args[i]] = (
@@ -129,24 +132,44 @@ class AddJsonContextManagerDecorator:
                         )
                     )
                 else:
-                    for a in range(len(full_arg_spec.defaults)):
-                        i += 1
-                        data[full_arg_spec.args[i]] = (
-                            AddJsonContextManagerDecorator.return_transform_arg_type(
-                                full_arg_spec.defaults[a]
+                    if full_arg_spec.defaults is not None:
+                        for a in full_arg_spec.defaults[
+                            -(len_full_arg_spec_args - len_args) :
+                        ]:
+                            i += 1
+                            data[full_arg_spec.args[i]] = (
+                                AddJsonContextManagerDecorator.return_transform_arg_type(
+                                    a
+                                )
                             )
-                        )
+
+        if len_args == 0 and full_arg_spec.defaults is not None:
+            for a in range(len(full_arg_spec.defaults)):
+                data[full_arg_spec.args[a]] = (
+                    AddJsonContextManagerDecorator.return_transform_arg_type(
+                        full_arg_spec.defaults[a]
+                    )
+                )
+
+        if full_arg_spec.kwonlydefaults is not None:
+            for key, value in full_arg_spec.kwonlydefaults.items():
+                data[key] = AddJsonContextManagerDecorator.return_transform_arg_type(
+                    value
+                )
+
         if len(kwargs) != 0:
             for key, value in kwargs.items():
                 data[key] = AddJsonContextManagerDecorator.return_transform_arg_type(
                     value
                 )
+        print(f"Data:{data}")
         return data
 
     def __call__(self, function: Callable[..., Any]) -> Callable[..., Any]:
         self.function_name = function.__name__
 
         def the_wrapper_around(*args: Any, **kwargs: Any) -> Any:
+            print(args)
             data_args_kwargs = self.parser_args_kwargs_for_json(args, kwargs, function)
             self.start_time = int(time.time())
             a = self.create_data_object(data_args_kwargs=data_args_kwargs)
