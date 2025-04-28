@@ -93,9 +93,6 @@ class AddJsonContextManagerDecorator:
     ) -> dict:
         data = {}
         full_arg_spec = inspect.getfullargspec(function)
-        print(full_arg_spec)
-        print(args)
-        print(kwargs)
         len_full_arg_spec_args = len(full_arg_spec.args)
         len_args = len(args)
 
@@ -162,14 +159,12 @@ class AddJsonContextManagerDecorator:
                 data[key] = AddJsonContextManagerDecorator.return_transform_arg_type(
                     value
                 )
-        print(f"Data:{data}")
         return data
 
     def __call__(self, function: Callable[..., Any]) -> Callable[..., Any]:
         self.function_name = function.__name__
 
         def the_wrapper_around(*args: Any, **kwargs: Any) -> Any:
-            print(args)
             data_args_kwargs = self.parser_args_kwargs_for_json(args, kwargs, function)
             self.start_time = int(time.time())
             a = self.create_data_object(data_args_kwargs=data_args_kwargs)
@@ -215,8 +210,6 @@ def new3_decorated_func(
     str01: str, int01: int, list01: list, par01: int = 0, par02: tuple = (1, 2, 3), **r
 ) -> None:
     time.sleep(3)
-    print(function2())
-    print(function1(7))
     # raise Exception("My Error0")
     return print(
         str01 + str(int01) + str(list01) + str(par01) + str(par02) + "_!" + str(r)

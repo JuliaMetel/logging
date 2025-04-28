@@ -1,5 +1,9 @@
 import pytest
-from json_context_manager_decorator import AddJsonContextManagerDecorator
+from json_context_manager_decorator import (
+    AddJsonContextManagerDecorator,
+    DataLogging,
+    DataLoggingDecorator,
+)
 
 
 class TestCreateDataObject:
@@ -337,5 +341,268 @@ class TestParserArgsKwargsForJson:
             AddJsonContextManagerDecorator.parser_args_kwargs_for_json(
                 args, kwargs, func
             )
+            == expected
+        )
+
+
+class TestToDict:
+    @pytest.mark.parametrize(
+        ("name", "start_time", "end_time", "error", "inner", "expected"),
+        [
+            (
+                "Name1",
+                12345,
+                67890,
+                None,
+                dict(),
+                {
+                    "name": "Name1",
+                    "startTime": 12345,
+                    "endTime": 67890,
+                    "inner": list(),
+                },
+            ),
+            (
+                "Name2",
+                12346,
+                67891,
+                Exception("Test exception"),
+                dict(),
+                {
+                    "name": "Name2",
+                    "startTime": 12346,
+                    "endTime": 67891,
+                    "error": "Test exception",
+                    "inner": list(),
+                },
+            ),
+            (
+                "Name3",
+                12347,
+                67892,
+                None,
+                {
+                    "inner": [
+                        DataLogging(
+                            name="TEST_3",
+                            start_time=1745853851,
+                            end_time=1745853854,
+                            error=None,
+                            inner=[
+                                DataLogging(
+                                    name="7Task",
+                                    start_time=1745853851,
+                                    end_time=1745853854,
+                                    error=None,
+                                    inner=[],
+                                )
+                            ],
+                        )
+                    ]
+                },
+                {
+                    "name": "Name3",
+                    "startTime": 12347,
+                    "endTime": 67892,
+                    "inner": [
+                        {
+                            "name": "TEST_3",
+                            "startTime": 1745853851,
+                            "endTime": 1745853854,
+                            "inner": [
+                                {
+                                    "name": "7Task",
+                                    "startTime": 1745853851,
+                                    "endTime": 1745853854,
+                                    "inner": [],
+                                }
+                            ],
+                        }
+                    ],
+                },
+            ),
+            (
+                "Name4",
+                12348,
+                67893,
+                Exception("Test exception 1"),
+                {
+                    "inner": [
+                        DataLogging(
+                            name="TEST_4",
+                            start_time=1745853851,
+                            end_time=1745853854,
+                            error=None,
+                            inner=[],
+                        )
+                    ]
+                },
+                {
+                    "name": "Name4",
+                    "startTime": 12348,
+                    "endTime": 67893,
+                    "error": "Test exception 1",
+                    "inner": [
+                        {
+                            "name": "TEST_4",
+                            "startTime": 1745853851,
+                            "endTime": 1745853854,
+                            "inner": [],
+                        }
+                    ],
+                },
+            ),
+            (
+                "Name5",
+                12351,
+                67896,
+                None,
+                {
+                    "inner": [
+                        DataLoggingDecorator(
+                            name="TEST_7",
+                            start_time=1745855778,
+                            end_time=1745855781,
+                            error=None,
+                            inner=[],
+                            function_name="function03",
+                            function_arguments={"test": 3},
+                        )
+                    ]
+                },
+                {
+                    "name": "Name5",
+                    "startTime": 12351,
+                    "endTime": 67896,
+                    "inner": [
+                        {
+                            "name": "TEST_7",
+                            "startTime": 1745855778,
+                            "endTime": 1745855781,
+                            "inner": [],
+                            "functionName": "function03",
+                            "functionArguments": {"test": 3},
+                        }
+                    ],
+                },
+            ),
+        ],
+    )
+    def test_for_class_data_logging(
+        self, name, start_time, end_time, error, inner, expected
+    ):
+        assert (
+            DataLogging(name, start_time, end_time, error, **inner).to_dict()
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        (
+            "name",
+            "start_time",
+            "end_time",
+            "error",
+            "function_name",
+            "function_arguments",
+            "inner",
+            "expected",
+        ),
+        [
+            (
+                "Name5",
+                12349,
+                67894,
+                Exception("Test exception 2"),
+                "Function's name",
+                {"str": "test", "list01": "<class 'list'>"},
+                {
+                    "inner": [
+                        DataLoggingDecorator(
+                            name="TEST_5",
+                            start_time=1745855779,
+                            end_time=1745855782,
+                            error=None,
+                            inner=[],
+                            function_name="function02",
+                            function_arguments={},
+                        )
+                    ]
+                },
+                {
+                    "name": "Name5",
+                    "startTime": 12349,
+                    "endTime": 67894,
+                    "error": "Test exception 2",
+                    "functionName": "Function's name",
+                    "functionArguments": {"str": "test", "list01": "<class 'list'>"},
+                    "inner": [
+                        {
+                            "name": "TEST_5",
+                            "startTime": 1745855779,
+                            "endTime": 1745855782,
+                            "inner": [],
+                            "functionName": "function02",
+                            "functionArguments": {},
+                        }
+                    ],
+                },
+            ),
+            (
+                "Name6",
+                12350,
+                67895,
+                None,
+                "Function's name 1",
+                {},
+                {
+                    "inner": [
+                        DataLogging(
+                            name="TEST_6",
+                            start_time=1745855779,
+                            end_time=1745855782,
+                            error=None,
+                            inner=[],
+                        )
+                    ]
+                },
+                {
+                    "name": "Name6",
+                    "startTime": 12350,
+                    "endTime": 67895,
+                    "functionName": "Function's name 1",
+                    "functionArguments": {},
+                    "inner": [
+                        {
+                            "name": "TEST_6",
+                            "startTime": 1745855779,
+                            "endTime": 1745855782,
+                            "inner": [],
+                        }
+                    ],
+                },
+            ),
+        ],
+    )
+    def test_for_class_data_logging_decorator(
+        self,
+        name,
+        start_time,
+        end_time,
+        error,
+        function_name,
+        function_arguments,
+        inner,
+        expected,
+    ):
+        assert (
+            DataLoggingDecorator(
+                name,
+                start_time,
+                end_time,
+                error,
+                function_name,
+                function_arguments,
+                **inner,
+            ).to_dict()
             == expected
         )
