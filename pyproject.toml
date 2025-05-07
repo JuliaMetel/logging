@@ -5,7 +5,6 @@ description = ""
 authors = [
     {name = "yulichka.metel",email = "yulichka.metel@gmail.com"}
 ]
-readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "mypy (>=1.15.0,<2.0.0)",
