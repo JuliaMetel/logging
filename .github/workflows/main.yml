@@ -51,7 +51,7 @@ jobs:
 
       - name: Test's run
         run: |
-          poetry run pytest --junit-xml=result
+          poetry run pytest --junit-xml=result.xml
 
       - name: Test Report
         uses: dorny/test-reporter@v2
