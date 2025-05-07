@@ -6,7 +6,7 @@ on:
       - 'main'
 
 jobs:
-  linters:
+  mypy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,5 +24,10 @@ jobs:
 
       - name: mypy
         run: |
+          set -e
+          par=0
           poetry run mypy .
+          par=par+$?
           poetry run ruff format --check
+          par=$par+$?
+          exit $par
