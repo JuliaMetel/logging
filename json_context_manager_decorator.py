@@ -16,7 +16,8 @@ class DataLogging:
     start_time: int
     end_time: int
     error: Exception | None
-    inner: list = field(default_factory=list, kw_only=True)
+    inner: list = field(default_factory=list,
+                        kw_only=True)
 
     def to_dict(self) -> dict:
         data = {

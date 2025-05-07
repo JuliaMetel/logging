@@ -1,0 +1,28 @@
+name: main
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  linters:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+
+      - uses: abatilo/actions-poetry@v3
+        with:
+          poetry-version: "latest"
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: mypy
+        run: |
+          poetry run mypy .
+          poetry run ruff format --check
