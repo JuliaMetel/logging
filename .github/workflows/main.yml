@@ -51,5 +51,13 @@ jobs:
 
       - name: Test's run
         run: |
-          poetry run pytest
+          poetry run pytest 
+
+      - name: Test Report
+        uses: dorny/test-reporter@v2
+        if: success() || failure()
+        with:
+          name: Tests
+          path: *.xml
+          reporter: java-junit
 
