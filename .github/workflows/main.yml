@@ -58,6 +58,6 @@ jobs:
         if: success() || failure()
         with:
           name: Tests
-          path: *.xml
+          path: '*.xml'
           reporter: java-junit
 
