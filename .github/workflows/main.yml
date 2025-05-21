@@ -28,9 +28,9 @@ jobs:
           set -x
           par=0
           poetry run mypy .
-          par=par+$?
+          par=$((par+$?))
           poetry run ruff format --check
-          par=$par+$?
+          par=$(($par+$?))
           exit $par
 
   tests:
